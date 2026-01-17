@@ -50,8 +50,18 @@ public:
         return 3;
     }
 
+    // Check if a round-robin position (1, 2, or 3) is currently active
+    bool isRoundRobinActive(int rrPosition) const
+    {
+        for (int rr : noteRoundRobin)
+            if (rr == rrPosition) return true;
+        return false;
+    }
+
 private:
     std::array<int, 128> noteVelocities{};
+    std::array<int, 128> noteRoundRobin{};  // Which RR position each note triggered (0=none, 1-3)
+    int currentRoundRobin = 1;  // Next RR position to assign (cycles 1->2->3->1)
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiKeyboardProcessor)
 };

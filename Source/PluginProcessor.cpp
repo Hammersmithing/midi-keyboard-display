@@ -5,11 +5,14 @@ MidiKeyboardProcessor::MidiKeyboardProcessor()
     : AudioProcessor(BusesProperties())
 {
     noteVelocities.fill(0);
+    noteRoundRobin.fill(0);
 }
 
 void MidiKeyboardProcessor::prepareToPlay(double, int)
 {
     noteVelocities.fill(0);
+    noteRoundRobin.fill(0);
+    currentRoundRobin = 1;
 }
 
 void MidiKeyboardProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -19,14 +22,20 @@ void MidiKeyboardProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
     for (const auto metadata : midiMessages)
     {
         auto message = metadata.getMessage();
+        auto noteIndex = static_cast<size_t>(message.getNoteNumber());
 
         if (message.isNoteOn())
         {
-            noteVelocities[static_cast<size_t>(message.getNoteNumber())] = message.getVelocity();
+            noteVelocities[noteIndex] = message.getVelocity();
+            noteRoundRobin[noteIndex] = currentRoundRobin;
+
+            // Advance round-robin: 1 -> 2 -> 3 -> 1
+            currentRoundRobin = (currentRoundRobin % 3) + 1;
         }
         else if (message.isNoteOff())
         {
-            noteVelocities[static_cast<size_t>(message.getNoteNumber())] = 0;
+            noteVelocities[noteIndex] = 0;
+            noteRoundRobin[noteIndex] = 0;
         }
     }
 }

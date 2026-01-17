@@ -13,6 +13,17 @@ private:
     MidiKeyboardProcessor& processor;
 };
 
+class RoundRobinDisplay : public juce::Component, public juce::Timer
+{
+public:
+    RoundRobinDisplay(MidiKeyboardProcessor& p);
+    void paint(juce::Graphics& g) override;
+    void timerCallback() override;
+
+private:
+    MidiKeyboardProcessor& processor;
+};
+
 class KeyboardDisplay : public juce::Component, public juce::Timer
 {
 public:
@@ -45,6 +56,7 @@ public:
 private:
     MidiKeyboardProcessor& processorRef;
     VelocityDisplay velocityDisplay;
+    RoundRobinDisplay roundRobinDisplay;
     KeyboardDisplay keyboard;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiKeyboardEditor)

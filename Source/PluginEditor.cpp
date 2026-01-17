@@ -43,6 +43,52 @@ void VelocityDisplay::paint(juce::Graphics& g)
 }
 
 //==============================================================================
+// RoundRobinDisplay
+//==============================================================================
+
+RoundRobinDisplay::RoundRobinDisplay(MidiKeyboardProcessor& p)
+    : processor(p)
+{
+    startTimerHz(60);
+}
+
+void RoundRobinDisplay::timerCallback()
+{
+    repaint();
+}
+
+void RoundRobinDisplay::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    const float boxSize = juce::jmin(bounds.getWidth() / 3.0f, bounds.getHeight()) - 4.0f;
+    const float totalWidth = boxSize * 3.0f + 8.0f;  // 3 boxes + gaps
+    const float startX = bounds.getCentreX() - totalWidth / 2.0f;
+    const float y = bounds.getCentreY() - boxSize / 2.0f;
+
+    for (int i = 1; i <= 3; ++i)
+    {
+        float x = startX + (i - 1) * (boxSize + 4.0f);
+        juce::Rectangle<float> box(x, y, boxSize, boxSize);
+
+        bool isActive = processor.isRoundRobinActive(i);
+
+        if (isActive)
+            g.setColour(juce::Colour(0xff4a9eff));  // Blue when active
+        else
+            g.setColour(juce::Colour(0xff3d3d3d));  // Dark gray when inactive
+
+        g.fillRect(box);
+        g.setColour(juce::Colours::black);
+        g.drawRect(box, 1.0f);
+
+        // Draw the number label
+        g.setColour(isActive ? juce::Colours::white : juce::Colour(0xff888888));
+        g.setFont(boxSize * 0.5f);
+        g.drawText(juce::String(i), box, juce::Justification::centred);
+    }
+}
+
+//==============================================================================
 // KeyboardDisplay
 //==============================================================================
 
@@ -143,11 +189,12 @@ void KeyboardDisplay::paint(juce::Graphics& g)
 //==============================================================================
 
 MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
-    : AudioProcessorEditor(&p), processorRef(p), velocityDisplay(p), keyboard(p)
+    : AudioProcessorEditor(&p), processorRef(p), velocityDisplay(p), roundRobinDisplay(p), keyboard(p)
 {
     addAndMakeVisible(velocityDisplay);
+    addAndMakeVisible(roundRobinDisplay);
     addAndMakeVisible(keyboard);
-    setSize(600, 200);
+    setSize(600, 280);
 }
 
 void MidiKeyboardEditor::paint(juce::Graphics& g)
@@ -159,10 +206,13 @@ void MidiKeyboardEditor::resized()
 {
     auto bounds = getLocalBounds().reduced(5);
 
-    // Velocity display takes top portion, keyboard takes bottom
-    const int velocityHeight = 75;  // 3 rectangles ~25px each
+    const int velocityHeight = 75;   // 3 velocity rectangles
+    const int roundRobinHeight = 70; // Round-robin boxes
+    const int gap = 5;
 
     velocityDisplay.setBounds(bounds.removeFromTop(velocityHeight));
-    bounds.removeFromTop(5);  // gap between velocity and keyboard
+    bounds.removeFromTop(gap);
+    roundRobinDisplay.setBounds(bounds.removeFromTop(roundRobinHeight));
+    bounds.removeFromTop(gap);
     keyboard.setBounds(bounds);
 }
