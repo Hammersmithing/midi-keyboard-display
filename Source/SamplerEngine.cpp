@@ -198,8 +198,8 @@ int SamplerEngine::parseNoteName(const juce::String& noteName) const
 
 bool SamplerEngine::parseFileName(const juce::String& fileName, int& note, int& velocity, int& roundRobin) const
 {
-    // Expected format: NoteName_Velocity_RoundRobin[_OptionalSuffix].ext
-    // Examples: C4_001_02.wav, G#6_033_01.wav, Db3_127_03_soft.wav
+    // Expected format: NoteName_Velocity_RoundRobin[_OptionalSuffix...].ext
+    // Examples: C4_001_02.wav, G#6_033_01.wav, Db3_127_03_soft.wav, A0_040_01_piano.wav
 
     juce::String baseName = fileName.upToLastOccurrenceOf(".", false, false);
 
@@ -214,7 +214,7 @@ bool SamplerEngine::parseFileName(const juce::String& fileName, int& note, int& 
     if (note < 0)
         return false;
 
-    // Parse velocity (second part, 3 digits)
+    // Parse velocity (second part)
     juce::String velStr = parts[1];
     if (velStr.length() < 1 || !velStr.containsOnly("0123456789"))
         return false;
@@ -222,13 +222,15 @@ bool SamplerEngine::parseFileName(const juce::String& fileName, int& note, int& 
     if (velocity < 1 || velocity > 127)
         return false;
 
-    // Parse round-robin (third part, 2 digits)
+    // Parse round-robin (third part)
     juce::String rrStr = parts[2];
     if (rrStr.length() < 1 || !rrStr.containsOnly("0123456789"))
         return false;
     roundRobin = rrStr.getIntValue();
     if (roundRobin < 1 || roundRobin > 3)
         return false;
+
+    // Any additional parts (like "_piano") are ignored as optional suffixes
 
     return true;
 }
