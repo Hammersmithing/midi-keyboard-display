@@ -2,6 +2,17 @@
 
 #include "PluginProcessor.h"
 
+class VelocityDisplay : public juce::Component, public juce::Timer
+{
+public:
+    VelocityDisplay(MidiKeyboardProcessor& p);
+    void paint(juce::Graphics& g) override;
+    void timerCallback() override;
+
+private:
+    MidiKeyboardProcessor& processor;
+};
+
 class KeyboardDisplay : public juce::Component, public juce::Timer
 {
 public:
@@ -33,6 +44,7 @@ public:
 
 private:
     MidiKeyboardProcessor& processorRef;
+    VelocityDisplay velocityDisplay;
     KeyboardDisplay keyboard;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiKeyboardEditor)

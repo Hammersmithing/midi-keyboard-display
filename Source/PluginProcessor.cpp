@@ -4,12 +4,12 @@
 MidiKeyboardProcessor::MidiKeyboardProcessor()
     : AudioProcessor(BusesProperties())
 {
-    noteStates.fill(false);
+    noteVelocities.fill(0);
 }
 
 void MidiKeyboardProcessor::prepareToPlay(double, int)
 {
-    noteStates.fill(false);
+    noteVelocities.fill(0);
 }
 
 void MidiKeyboardProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -22,11 +22,11 @@ void MidiKeyboardProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
 
         if (message.isNoteOn())
         {
-            noteStates[message.getNoteNumber()] = true;
+            noteVelocities[static_cast<size_t>(message.getNoteNumber())] = message.getVelocity();
         }
         else if (message.isNoteOff())
         {
-            noteStates[message.getNoteNumber()] = false;
+            noteVelocities[static_cast<size_t>(message.getNoteNumber())] = 0;
         }
     }
 }

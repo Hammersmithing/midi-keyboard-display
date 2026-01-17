@@ -32,10 +32,26 @@ public:
     void setStateInformation(const void*, int) override {}
 
     // Check if a note is currently pressed
-    bool isNoteOn(int midiNote) const { return noteStates[midiNote]; }
+    bool isNoteOn(int midiNote) const { return noteVelocities[midiNote] > 0; }
+
+    // Get velocity of a note (0 if not pressed)
+    int getNoteVelocity(int midiNote) const { return noteVelocities[midiNote]; }
+
+    // Get the highest velocity tier currently active (0=none, 1=low 1-42, 2=mid 43-84, 3=high 85-127)
+    int getActiveVelocityTier() const
+    {
+        int maxVel = 0;
+        for (int v : noteVelocities)
+            if (v > maxVel) maxVel = v;
+
+        if (maxVel == 0) return 0;
+        if (maxVel <= 42) return 1;
+        if (maxVel <= 84) return 2;
+        return 3;
+    }
 
 private:
-    std::array<bool, 128> noteStates{};
+    std::array<int, 128> noteVelocities{};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiKeyboardProcessor)
 };

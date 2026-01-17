@@ -2,6 +2,47 @@
 #include "PluginEditor.h"
 
 //==============================================================================
+// VelocityDisplay
+//==============================================================================
+
+VelocityDisplay::VelocityDisplay(MidiKeyboardProcessor& p)
+    : processor(p)
+{
+    startTimerHz(60);
+}
+
+void VelocityDisplay::timerCallback()
+{
+    repaint();
+}
+
+void VelocityDisplay::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    const float rectHeight = bounds.getHeight() / 3.0f;
+    const float gap = 2.0f;
+
+    int activeTier = processor.getActiveVelocityTier();
+
+    // Draw 3 rectangles from top to bottom: high (3), mid (2), low (1)
+    for (int i = 0; i < 3; ++i)
+    {
+        int tier = 3 - i;  // top = tier 3, middle = tier 2, bottom = tier 1
+        float y = bounds.getY() + i * rectHeight;
+        juce::Rectangle<float> rect(bounds.getX(), y + gap / 2, bounds.getWidth(), rectHeight - gap);
+
+        if (activeTier == tier)
+            g.setColour(juce::Colour(0xff4a9eff));  // Blue when active
+        else
+            g.setColour(juce::Colour(0xff3d3d3d));  // Dark gray when inactive
+
+        g.fillRect(rect);
+        g.setColour(juce::Colours::black);
+        g.drawRect(rect, 1.0f);
+    }
+}
+
+//==============================================================================
 // KeyboardDisplay
 //==============================================================================
 
@@ -102,10 +143,11 @@ void KeyboardDisplay::paint(juce::Graphics& g)
 //==============================================================================
 
 MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
-    : AudioProcessorEditor(&p), processorRef(p), keyboard(p)
+    : AudioProcessorEditor(&p), processorRef(p), velocityDisplay(p), keyboard(p)
 {
+    addAndMakeVisible(velocityDisplay);
     addAndMakeVisible(keyboard);
-    setSize(600, 120);
+    setSize(600, 200);
 }
 
 void MidiKeyboardEditor::paint(juce::Graphics& g)
@@ -115,5 +157,12 @@ void MidiKeyboardEditor::paint(juce::Graphics& g)
 
 void MidiKeyboardEditor::resized()
 {
-    keyboard.setBounds(getLocalBounds().reduced(5));
+    auto bounds = getLocalBounds().reduced(5);
+
+    // Velocity display takes top portion, keyboard takes bottom
+    const int velocityHeight = 75;  // 3 rectangles ~25px each
+
+    velocityDisplay.setBounds(bounds.removeFromTop(velocityHeight));
+    bounds.removeFromTop(5);  // gap between velocity and keyboard
+    keyboard.setBounds(bounds);
 }
