@@ -19,6 +19,10 @@ public:
     bool areSamplesLoaded() const { return samplerEngine.isLoaded(); }
     juce::String getLoadedFolderPath() const { return samplerEngine.getLoadedFolderPath(); }
 
+    // ADSR controls
+    void setADSR(float attack, float decay, float sustain, float release);
+    ADSRParams getADSR() const { return samplerEngine.getADSR(); }
+
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 

@@ -15,6 +15,16 @@ struct Sample
     double sampleRate = 44100.0;
 };
 
+struct ADSRParams
+{
+    float attack = 0.01f;   // seconds
+    float decay = 0.1f;     // seconds
+    float sustain = 0.7f;   // level 0-1
+    float release = 0.3f;   // seconds
+};
+
+enum class EnvelopeStage { Idle, Attack, Decay, Sustain, Release };
+
 struct VelocityLayer
 {
     int velocityValue;      // The actual velocity value from the file name
@@ -44,6 +54,10 @@ public:
     bool isLoaded() const { return !noteMappings.empty(); }
     juce::String getLoadedFolderPath() const { return loadedFolderPath; }
 
+    // ADSR controls
+    void setADSR(float attack, float decay, float sustain, float release);
+    ADSRParams getADSR() const { return adsrParams; }
+
 private:
     // Parse note name to MIDI note number (e.g., "C4" -> 60, "G#6" -> 104)
     int parseNoteName(const juce::String& noteName) const;
@@ -72,9 +86,16 @@ private:
         double pitchRatio = 1.0;    // Playback rate (< 1.0 = lower pitch)
         int midiNote = 0;
         bool active = false;
+
+        // Envelope state
+        EnvelopeStage envStage = EnvelopeStage::Idle;
+        float envLevel = 0.0f;      // Current envelope level (0-1)
+        float envIncrement = 0.0f;  // Per-sample increment for current stage
     };
     static constexpr int maxVoices = 32;
     std::array<Voice, maxVoices> voices;
+
+    ADSRParams adsrParams;
 
     double currentSampleRate = 44100.0;
     juce::String loadedFolderPath;

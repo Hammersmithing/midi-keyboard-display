@@ -202,7 +202,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     loadButton.onClick = [this] { loadSamplesClicked(); };
 
     addAndMakeVisible(statusLabel);
-    statusLabel.setFont(juce::Font(14.0f));
+    statusLabel.setFont(juce::FontOptions(14.0f));
     statusLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
 
     if (processorRef.areSamplesLoaded())
@@ -210,7 +210,38 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     else
         statusLabel.setText("No samples loaded", juce::dontSendNotification);
 
-    setSize(1200, 600);  // Slightly taller for controls
+    // Setup ADSR sliders
+    auto setupSlider = [this](juce::Slider& slider, juce::Label& label, double min, double max, double value)
+    {
+        slider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+        slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
+        slider.setRange(min, max, 0.001);
+        slider.setValue(value);
+        slider.onValueChange = [this] { updateADSR(); };
+        addAndMakeVisible(slider);
+
+        label.setJustificationType(juce::Justification::centred);
+        label.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+        addAndMakeVisible(label);
+    };
+
+    auto adsr = processorRef.getADSR();
+    setupSlider(attackSlider, attackLabel, 0.001, 2.0, adsr.attack);
+    setupSlider(decaySlider, decayLabel, 0.001, 2.0, adsr.decay);
+    setupSlider(sustainSlider, sustainLabel, 0.0, 1.0, adsr.sustain);
+    setupSlider(releaseSlider, releaseLabel, 0.001, 3.0, adsr.release);
+
+    setSize(1200, 650);  // Taller for ADSR controls
+}
+
+void MidiKeyboardEditor::updateADSR()
+{
+    processorRef.setADSR(
+        static_cast<float>(attackSlider.getValue()),
+        static_cast<float>(decaySlider.getValue()),
+        static_cast<float>(sustainSlider.getValue()),
+        static_cast<float>(releaseSlider.getValue())
+    );
 }
 
 void MidiKeyboardEditor::loadSamplesClicked()
@@ -247,14 +278,35 @@ void MidiKeyboardEditor::resized()
     auto bounds = getLocalBounds().reduced(10);
 
     const int controlsHeight = 30;
+    const int adsrHeight = 70;
     const int keyboardHeight = 120;
     const int gap = 10;
 
-    // Top controls
+    // Top controls row
     auto controlsArea = bounds.removeFromTop(controlsHeight);
     loadButton.setBounds(controlsArea.removeFromLeft(120));
     controlsArea.removeFromLeft(10);
     statusLabel.setBounds(controlsArea);
+
+    bounds.removeFromTop(gap);
+
+    // ADSR row
+    auto adsrArea = bounds.removeFromTop(adsrHeight);
+    const int knobWidth = 60;
+    const int labelHeight = 15;
+
+    auto layoutKnob = [&](juce::Slider& slider, juce::Label& label)
+    {
+        auto knobArea = adsrArea.removeFromLeft(knobWidth);
+        label.setBounds(knobArea.removeFromTop(labelHeight));
+        slider.setBounds(knobArea);
+        adsrArea.removeFromLeft(5);
+    };
+
+    layoutKnob(attackSlider, attackLabel);
+    layoutKnob(decaySlider, decayLabel);
+    layoutKnob(sustainSlider, sustainLabel);
+    layoutKnob(releaseSlider, releaseLabel);
 
     bounds.removeFromTop(gap);
 

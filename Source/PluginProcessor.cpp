@@ -30,6 +30,11 @@ void MidiKeyboardProcessor::loadSamplesFromFolder(const juce::File& folder)
     samplerEngine.loadSamplesFromFolder(folder);
 }
 
+void MidiKeyboardProcessor::setADSR(float attack, float decay, float sustain, float release)
+{
+    samplerEngine.setADSR(attack, decay, sustain, release);
+}
+
 void MidiKeyboardProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     buffer.clear();

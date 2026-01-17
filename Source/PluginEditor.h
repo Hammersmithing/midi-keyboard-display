@@ -56,5 +56,11 @@ private:
     juce::Label statusLabel;
     std::unique_ptr<juce::FileChooser> fileChooser;
 
+    // ADSR controls
+    juce::Slider attackSlider, decaySlider, sustainSlider, releaseSlider;
+    juce::Label attackLabel{"", "A"}, decayLabel{"", "D"}, sustainLabel{"", "S"}, releaseLabel{"", "R"};
+
+    void updateADSR();
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiKeyboardEditor)
 };

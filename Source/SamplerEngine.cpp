@@ -16,8 +16,18 @@ void SamplerEngine::prepareToPlay(double sampleRate, int /*samplesPerBlock*/)
     {
         voice.active = false;
         voice.sample = nullptr;
-        voice.position = 0;
+        voice.position = 0.0;
+        voice.envStage = EnvelopeStage::Idle;
+        voice.envLevel = 0.0f;
     }
+}
+
+void SamplerEngine::setADSR(float attack, float decay, float sustain, float release)
+{
+    adsrParams.attack = juce::jmax(0.001f, attack);   // Minimum 1ms
+    adsrParams.decay = juce::jmax(0.001f, decay);
+    adsrParams.sustain = juce::jlimit(0.0f, 1.0f, sustain);
+    adsrParams.release = juce::jmax(0.001f, release);
 }
 
 int SamplerEngine::parseNoteName(const juce::String& noteName) const
@@ -339,14 +349,28 @@ void SamplerEngine::noteOn(int midiNote, int velocity, int roundRobin)
         voiceToUse->pitchRatio = pitchRatio;
         voiceToUse->midiNote = midiNote;
         voiceToUse->active = true;
+
+        // Start attack phase
+        voiceToUse->envStage = EnvelopeStage::Attack;
+        voiceToUse->envLevel = 0.0f;
+        float attackSamples = adsrParams.attack * static_cast<float>(currentSampleRate);
+        voiceToUse->envIncrement = 1.0f / attackSamples;
     }
 }
 
 void SamplerEngine::noteOff(int midiNote)
 {
-    // For now, we let samples play to completion (no envelope)
-    // Could add release envelope here later
-    (void)midiNote;
+    // Find voices playing this note and trigger release
+    for (auto& voice : voices)
+    {
+        if (voice.active && voice.midiNote == midiNote && voice.envStage != EnvelopeStage::Release)
+        {
+            voice.envStage = EnvelopeStage::Release;
+            float releaseSamples = adsrParams.release * static_cast<float>(currentSampleRate);
+            // Decrement from current level to 0
+            voice.envIncrement = -voice.envLevel / releaseSamples;
+        }
+    }
 }
 
 void SamplerEngine::processBlock(juce::AudioBuffer<float>& buffer)
@@ -366,12 +390,58 @@ void SamplerEngine::processBlock(juce::AudioBuffer<float>& buffer)
         // Process each output sample with pitch-shifted interpolation
         for (int i = 0; i < numSamples; ++i)
         {
-            // Check if we've reached the end of the sample
-            if (voice.position >= static_cast<double>(sampleLength - 1))
+            // Check if we've reached the end of the sample or envelope finished
+            if (voice.position >= static_cast<double>(sampleLength - 1) ||
+                voice.envStage == EnvelopeStage::Idle)
             {
                 voice.active = false;
                 voice.sample = nullptr;
+                voice.envStage = EnvelopeStage::Idle;
                 break;
+            }
+
+            // Process envelope
+            voice.envLevel += voice.envIncrement;
+
+            switch (voice.envStage)
+            {
+                case EnvelopeStage::Attack:
+                    if (voice.envLevel >= 1.0f)
+                    {
+                        voice.envLevel = 1.0f;
+                        voice.envStage = EnvelopeStage::Decay;
+                        float decaySamples = adsrParams.decay * static_cast<float>(currentSampleRate);
+                        voice.envIncrement = (adsrParams.sustain - 1.0f) / decaySamples;
+                    }
+                    break;
+
+                case EnvelopeStage::Decay:
+                    if (voice.envLevel <= adsrParams.sustain)
+                    {
+                        voice.envLevel = adsrParams.sustain;
+                        voice.envStage = EnvelopeStage::Sustain;
+                        voice.envIncrement = 0.0f;
+                    }
+                    break;
+
+                case EnvelopeStage::Sustain:
+                    // Stay at sustain level until note off
+                    voice.envLevel = adsrParams.sustain;
+                    break;
+
+                case EnvelopeStage::Release:
+                    if (voice.envLevel <= 0.0f)
+                    {
+                        voice.envLevel = 0.0f;
+                        voice.envStage = EnvelopeStage::Idle;
+                        voice.active = false;
+                        voice.sample = nullptr;
+                        continue;
+                    }
+                    break;
+
+                case EnvelopeStage::Idle:
+                    break;
             }
 
             // Linear interpolation between two sample points
@@ -392,6 +462,9 @@ void SamplerEngine::processBlock(juce::AudioBuffer<float>& buffer)
                 float sample0 = src[pos0];
                 float sample1 = src[pos1];
                 float interpolated = static_cast<float>(sample0 + (sample1 - sample0) * frac);
+
+                // Apply envelope
+                interpolated *= voice.envLevel;
 
                 buffer.addSample(ch, i, interpolated);
             }
