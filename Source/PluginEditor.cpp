@@ -8,7 +8,7 @@
 KeyboardDisplay::KeyboardDisplay(MidiKeyboardProcessor& p)
     : processor(p)
 {
-    startTimerHz(60);  // Update display 60 times per second
+    startTimerHz(60);
 }
 
 void KeyboardDisplay::timerCallback()
@@ -16,74 +16,84 @@ void KeyboardDisplay::timerCallback()
     repaint();
 }
 
-void KeyboardDisplay::paint(juce::Graphics& g)
+void KeyboardDisplay::drawOctave(juce::Graphics& g, juce::Rectangle<float> bounds, int startNote)
 {
-    auto bounds = getLocalBounds();
-
-    // Calculate dimensions
-    const int numWhiteKeys = 7;  // C, D, E, F, G, A, B
+    const int numWhiteKeys = 7;
     const float whiteKeyWidth = bounds.getWidth() / static_cast<float>(numWhiteKeys);
     const float whiteKeyHeight = bounds.getHeight();
-    const float blackKeyWidth = whiteKeyWidth * 0.6f;
+    const float blackKeyWidth = whiteKeyWidth * 0.65f;
     const float blackKeyHeight = whiteKeyHeight * 0.6f;
 
-    // Base MIDI note for this octave (C)
-    int baseNote = (baseOctave + 1) * 12;  // C4 = 60
-
-    // White key positions: C=0, D=1, E=2, F=3, G=4, A=5, B=6
-    // Note offsets from C: C=0, D=2, E=4, F=5, G=7, A=9, B=11
+    // White key note offsets from C: C=0, D=2, E=4, F=5, G=7, A=9, B=11
     const int whiteKeyOffsets[] = {0, 2, 4, 5, 7, 9, 11};
 
-    // Draw white keys first
+    // Draw white keys
     for (int i = 0; i < numWhiteKeys; ++i)
     {
-        float x = i * whiteKeyWidth;
-        juce::Rectangle<float> keyRect(x, 0, whiteKeyWidth - 1, whiteKeyHeight);
+        float x = bounds.getX() + i * whiteKeyWidth;
+        juce::Rectangle<float> keyRect(x, bounds.getY(), whiteKeyWidth - 1, whiteKeyHeight);
 
-        int midiNote = baseNote + whiteKeyOffsets[i];
+        int midiNote = startNote + whiteKeyOffsets[i];
         bool isPressed = processor.isNoteOn(midiNote);
 
-        // Key color
         if (isPressed)
-            g.setColour(juce::Colour(0xff4a9eff));  // Blue when pressed
+            g.setColour(juce::Colour(0xff4a9eff));
         else
             g.setColour(juce::Colours::white);
 
         g.fillRect(keyRect);
-
-        // Key border
         g.setColour(juce::Colours::black);
         g.drawRect(keyRect, 1.0f);
     }
 
-    // Draw black keys on top
-    // Black keys: C#=1, D#=3, F#=6, G#=8, A#=10
-    // Position after white keys: C#->after C, D#->after D, F#->after F, G#->after G, A#->after A
-    const int blackKeyWhiteIndex[] = {0, 1, 3, 4, 5};  // Which white key they're after
-    const int blackKeyOffsets[] = {1, 3, 6, 8, 10};    // Note offset from C
+    // Black key positions and offsets
+    const int blackKeyWhiteIndex[] = {0, 1, 3, 4, 5};
+    const int blackKeyOffsets[] = {1, 3, 6, 8, 10};
 
+    // Draw black keys
     for (int i = 0; i < 5; ++i)
     {
-        float x = (blackKeyWhiteIndex[i] + 1) * whiteKeyWidth - blackKeyWidth / 2;
-        juce::Rectangle<float> keyRect(x, 0, blackKeyWidth, blackKeyHeight);
+        float x = bounds.getX() + (blackKeyWhiteIndex[i] + 1) * whiteKeyWidth - blackKeyWidth / 2;
+        juce::Rectangle<float> keyRect(x, bounds.getY(), blackKeyWidth, blackKeyHeight);
 
-        int midiNote = baseNote + blackKeyOffsets[i];
+        int midiNote = startNote + blackKeyOffsets[i];
         bool isPressed = processor.isNoteOn(midiNote);
 
-        // Key color
         if (isPressed)
-            g.setColour(juce::Colour(0xff4a9eff));  // Blue when pressed
+            g.setColour(juce::Colour(0xff4a9eff));
         else
             g.setColour(juce::Colours::black);
 
         g.fillRect(keyRect);
 
-        // Border for pressed black keys
         if (isPressed)
         {
             g.setColour(juce::Colours::white);
             g.drawRect(keyRect, 1.0f);
         }
+    }
+}
+
+void KeyboardDisplay::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+
+    // 3 octaves side by side: C3, C4, C5
+    const int numOctaves = 3;
+    const float octaveWidth = bounds.getWidth() / static_cast<float>(numOctaves);
+
+    // C3 = 48, C4 = 60, C5 = 72
+    const int startNotes[] = {48, 60, 72};
+
+    for (int i = 0; i < numOctaves; ++i)
+    {
+        juce::Rectangle<float> octaveBounds(
+            bounds.getX() + i * octaveWidth,
+            bounds.getY(),
+            octaveWidth,
+            bounds.getHeight()
+        );
+        drawOctave(g, octaveBounds, startNotes[i]);
     }
 }
 
@@ -95,7 +105,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     : AudioProcessorEditor(&p), processorRef(p), keyboard(p)
 {
     addAndMakeVisible(keyboard);
-    setSize(400, 150);
+    setSize(600, 120);
 }
 
 void MidiKeyboardEditor::paint(juce::Graphics& g)
@@ -105,5 +115,5 @@ void MidiKeyboardEditor::paint(juce::Graphics& g)
 
 void MidiKeyboardEditor::resized()
 {
-    keyboard.setBounds(getLocalBounds().reduced(10));
+    keyboard.setBounds(getLocalBounds().reduced(5));
 }

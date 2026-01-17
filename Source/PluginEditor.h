@@ -9,14 +9,12 @@ public:
     void paint(juce::Graphics& g) override;
     void timerCallback() override;
 
-    void setBaseOctave(int octave) { baseOctave = octave; repaint(); }
-    int getBaseOctave() const { return baseOctave; }
-
 private:
     MidiKeyboardProcessor& processor;
-    int baseOctave = 4;  // Middle C octave
 
-    // Key layout: C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+    // Draw a single octave starting at the given MIDI note
+    void drawOctave(juce::Graphics& g, juce::Rectangle<float> bounds, int startNote);
+
     bool isBlackKey(int noteInOctave) const
     {
         return noteInOctave == 1 || noteInOctave == 3 ||
