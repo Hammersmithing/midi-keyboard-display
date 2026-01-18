@@ -18,6 +18,7 @@ public:
     // Sample loading
     void loadSamplesFromFolder(const juce::File& folder);
     bool areSamplesLoaded() const { return samplerEngine.isLoaded(); }
+    bool areSamplesLoading() const { return samplerEngine.isLoading(); }
     juce::String getLoadedFolderPath() const { return samplerEngine.getLoadedFolderPath(); }
 
     // ADSR controls
@@ -48,8 +49,8 @@ public:
     const juce::String getProgramName(int) override { return {}; }
     void changeProgramName(int, const juce::String&) override {}
 
-    void getStateInformation(juce::MemoryBlock&) override {}
-    void setStateInformation(const void*, int) override {}
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
 
     // Check if a note is currently pressed
     bool isNoteOn(int midiNote) const { return noteVelocities[midiNote] > 0; }

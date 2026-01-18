@@ -7,6 +7,15 @@ SamplerEngine::SamplerEngine()
     formatManager.registerBasicFormats();
 }
 
+SamplerEngine::~SamplerEngine()
+{
+    // Wait for any loading thread to finish
+    if (loadingThread && loadingThread->joinable())
+    {
+        loadingThread->join();
+    }
+}
+
 void SamplerEngine::prepareToPlay(double sampleRate, int /*samplesPerBlock*/)
 {
     currentSampleRate = sampleRate;
@@ -237,11 +246,32 @@ bool SamplerEngine::parseFileName(const juce::String& fileName, int& note, int& 
 
 void SamplerEngine::loadSamplesFromFolder(const juce::File& folder)
 {
-    noteMappings.clear();
+    // Wait for any existing loading to complete
+    if (loadingThread && loadingThread->joinable())
+    {
+        loadingThread->join();
+    }
+
     loadedFolderPath = folder.getFullPathName();
 
     if (!folder.isDirectory())
         return;
+
+    // Start background loading
+    loadingState = LoadingState::Loading;
+    loadingThread = std::make_unique<std::thread>(&SamplerEngine::loadSamplesInBackground, this, folder.getFullPathName());
+}
+
+void SamplerEngine::loadSamplesInBackground(const juce::String& folderPath)
+{
+    juce::File folder(folderPath);
+
+    // Create temporary mappings
+    std::map<int, NoteMapping> tempMappings;
+
+    // Create a local format manager for this thread
+    juce::AudioFormatManager threadFormatManager;
+    threadFormatManager.registerBasicFormats();
 
     // Find all audio files
     juce::Array<juce::File> audioFiles;
@@ -254,7 +284,7 @@ void SamplerEngine::loadSamplesFromFolder(const juce::File& folder)
             continue;
 
         // Load the audio file
-        std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
+        std::unique_ptr<juce::AudioFormatReader> reader(threadFormatManager.createReaderFor(file));
         if (!reader)
             continue;
 
@@ -268,8 +298,8 @@ void SamplerEngine::loadSamplesFromFolder(const juce::File& folder)
         sample->buffer.setSize(static_cast<int>(reader->numChannels), static_cast<int>(reader->lengthInSamples));
         reader->read(&sample->buffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
 
-        // Add to note mappings
-        auto& noteMapping = noteMappings[note];
+        // Add to temp mappings
+        auto& noteMapping = tempMappings[note];
         noteMapping.midiNote = note;
 
         // Find or create velocity layer
@@ -292,11 +322,58 @@ void SamplerEngine::loadSamplesFromFolder(const juce::File& folder)
         }
     }
 
-    // Sort velocity layers and compute ranges
-    buildVelocityRanges();
+    // Build velocity ranges for temp mappings
+    for (auto& [note, mapping] : tempMappings)
+    {
+        std::sort(mapping.velocityLayers.begin(), mapping.velocityLayers.end(),
+            [](const VelocityLayer& a, const VelocityLayer& b) {
+                return a.velocityValue < b.velocityValue;
+            });
 
-    // Build fallbacks for missing notes
-    buildNoteFallbacks();
+        for (size_t i = 0; i < mapping.velocityLayers.size(); ++i)
+        {
+            auto& layer = mapping.velocityLayers[i];
+            if (i == 0)
+                layer.velocityRangeStart = 1;
+            else
+                layer.velocityRangeStart = mapping.velocityLayers[i - 1].velocityValue + 1;
+            layer.velocityRangeEnd = layer.velocityValue;
+        }
+    }
+
+    // Build fallbacks
+    for (int note = 0; note < 128; ++note)
+    {
+        if (tempMappings.find(note) != tempMappings.end())
+        {
+            tempMappings[note].fallbackNote = -1;
+        }
+        else
+        {
+            int fallback = -1;
+            for (int higher = note + 1; higher < 128; ++higher)
+            {
+                if (tempMappings.find(higher) != tempMappings.end())
+                {
+                    fallback = higher;
+                    break;
+                }
+            }
+            if (fallback >= 0)
+            {
+                tempMappings[note].midiNote = note;
+                tempMappings[note].fallbackNote = fallback;
+            }
+        }
+    }
+
+    // Swap in the new mappings (thread-safe)
+    {
+        std::lock_guard<std::mutex> lock(mappingsMutex);
+        noteMappings = std::move(tempMappings);
+    }
+
+    loadingState = LoadingState::Loaded;
 }
 
 void SamplerEngine::buildVelocityRanges()

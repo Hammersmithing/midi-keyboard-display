@@ -5,6 +5,9 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <atomic>
+#include <thread>
+#include <mutex>
 
 struct Sample
 {
@@ -40,10 +43,13 @@ struct NoteMapping
     int fallbackNote = -1; // If this note has no samples, use this note instead
 };
 
+enum class LoadingState { Idle, Loading, Loaded };
+
 class SamplerEngine
 {
 public:
     SamplerEngine();
+    ~SamplerEngine();
 
     void prepareToPlay(double sampleRate, int samplesPerBlock);
     void loadSamplesFromFolder(const juce::File& folder);
@@ -51,7 +57,9 @@ public:
     void noteOff(int midiNote);
     void processBlock(juce::AudioBuffer<float>& buffer);
 
-    bool isLoaded() const { return !noteMappings.empty(); }
+    bool isLoaded() const { return loadingState == LoadingState::Loaded && !noteMappings.empty(); }
+    bool isLoading() const { return loadingState == LoadingState::Loading; }
+    LoadingState getLoadingState() const { return loadingState; }
     juce::String getLoadedFolderPath() const { return loadedFolderPath; }
 
     // ADSR controls
@@ -108,4 +116,10 @@ private:
 
     double currentSampleRate = 44100.0;
     juce::String loadedFolderPath;
+
+    // Async loading
+    std::atomic<LoadingState> loadingState{LoadingState::Idle};
+    std::unique_ptr<std::thread> loadingThread;
+    std::mutex mappingsMutex;
+    void loadSamplesInBackground(const juce::String& folderPath);
 };

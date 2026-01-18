@@ -125,6 +125,51 @@ juce::AudioProcessorEditor* MidiKeyboardProcessor::createEditor()
     return new MidiKeyboardEditor(*this);
 }
 
+void MidiKeyboardProcessor::getStateInformation(juce::MemoryBlock& destData)
+{
+    // Save plugin state as XML
+    juce::XmlElement xml("MidiKeyboardState");
+
+    // Save sample folder path
+    xml.setAttribute("sampleFolder", getLoadedFolderPath());
+
+    // Save ADSR parameters
+    auto adsr = getADSR();
+    xml.setAttribute("attack", adsr.attack);
+    xml.setAttribute("decay", adsr.decay);
+    xml.setAttribute("sustain", adsr.sustain);
+    xml.setAttribute("release", adsr.release);
+
+    copyXmlToBinary(xml, destData);
+}
+
+void MidiKeyboardProcessor::setStateInformation(const void* data, int sizeInBytes)
+{
+    // Restore plugin state from XML
+    auto xml = getXmlFromBinary(data, sizeInBytes);
+
+    if (xml != nullptr && xml->hasTagName("MidiKeyboardState"))
+    {
+        // Restore ADSR parameters
+        float attack = static_cast<float>(xml->getDoubleAttribute("attack", 0.01));
+        float decay = static_cast<float>(xml->getDoubleAttribute("decay", 0.1));
+        float sustain = static_cast<float>(xml->getDoubleAttribute("sustain", 0.7));
+        float release = static_cast<float>(xml->getDoubleAttribute("release", 0.3));
+        setADSR(attack, decay, sustain, release);
+
+        // Restore sample folder
+        juce::String folderPath = xml->getStringAttribute("sampleFolder", "");
+        if (folderPath.isNotEmpty())
+        {
+            juce::File folder(folderPath);
+            if (folder.exists() && folder.isDirectory())
+            {
+                loadSamplesFromFolder(folder);
+            }
+        }
+    }
+}
+
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new MidiKeyboardProcessor();
