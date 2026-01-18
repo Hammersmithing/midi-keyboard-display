@@ -9,19 +9,9 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
-#include <future>
 #include "DiskStreaming.h"
 #include "StreamingVoice.h"
 #include "DiskStreamer.h"
-
-struct Sample
-{
-    juce::AudioBuffer<float> buffer;
-    int midiNote = 0;
-    int velocity = 0;
-    int roundRobin = 0;
-    double sampleRate = 44100.0;
-};
 
 struct ADSRParams
 {
@@ -31,14 +21,11 @@ struct ADSRParams
     float release = 0.3f;   // seconds
 };
 
-enum class EnvelopeStage { Idle, Attack, Decay, Sustain, Release };
-
 struct VelocityLayer
 {
     int velocityValue;      // The actual velocity value from the file name
     int velocityRangeStart; // Computed: lowest velocity that triggers this layer
     int velocityRangeEnd;   // Computed: highest velocity that triggers this layer
-    std::array<std::shared_ptr<Sample>, 4> roundRobinSamples; // Index 1-3 used
 };
 
 struct NoteMapping
@@ -73,11 +60,6 @@ public:
     void setADSR(float attack, float decay, float sustain, float release);
     ADSRParams getADSR() const { return adsrParams; }
 
-    // Streaming mode controls
-    bool isStreamingEnabled() const { return streamingEnabled; }
-    void setStreamingEnabled(bool enabled);
-    void loadSamplesStreamingFromFolder(const juce::File& folder);
-
     // Preload size control (in KB, range 32-1024)
     int getPreloadSizeKB() const { return preloadSizeKB; }
     void setPreloadSizeKB(int sizeKB) { preloadSizeKB = juce::jlimit(32, 1024, sizeKB); }
@@ -105,35 +87,7 @@ private:
     // Parse file name: returns true if valid, fills out note, velocity, roundRobin
     bool parseFileName(const juce::String& fileName, int& note, int& velocity, int& roundRobin) const;
 
-    // Build velocity ranges after all samples are loaded
-    void buildVelocityRanges();
-
-    // Build note fallbacks for missing notes
-    void buildNoteFallbacks();
-
-    // Find the sample to play for a given note/velocity/roundRobin
-    // Returns the sample and the actual MIDI note of the sample (for pitch calculation)
-    std::shared_ptr<Sample> findSample(int midiNote, int velocity, int roundRobin, int& actualSampleNote) const;
-
     std::map<int, NoteMapping> noteMappings; // Key: MIDI note number
-    juce::AudioFormatManager formatManager;
-
-    // Active voices
-    struct Voice
-    {
-        std::shared_ptr<Sample> sample;
-        double position = 0.0;      // Fractional position for pitch shifting
-        double pitchRatio = 1.0;    // Playback rate (< 1.0 = lower pitch)
-        int midiNote = 0;
-        bool active = false;
-
-        // Envelope state
-        EnvelopeStage envStage = EnvelopeStage::Idle;
-        float envLevel = 0.0f;      // Current envelope level (0-1)
-        float envIncrement = 0.0f;  // Per-sample increment for current stage
-    };
-    static constexpr int maxVoices = 180;
-    std::array<Voice, maxVoices> voices;
 
     ADSRParams adsrParams;
 
@@ -146,10 +100,8 @@ private:
     std::atomic<LoadingState> loadingState{LoadingState::Idle};
     std::unique_ptr<std::thread> loadingThread;
     mutable std::recursive_mutex mappingsMutex;  // mutable + recursive for nested const method calls
-    void loadSamplesInBackground(const juce::String& folderPath);
 
-    // ==================== Streaming Mode ====================
-    bool streamingEnabled = false;
+    // Preload size
     int preloadSizeKB = 64;  // Default 64KB, configurable 32-1024KB
 
     // Streaming voices
@@ -158,7 +110,7 @@ private:
     // Background disk streaming thread
     std::unique_ptr<DiskStreamer> diskStreamer;
 
-    // Preloaded samples for streaming (maps note -> velocity -> roundRobin -> sample)
+    // Preloaded samples for streaming
     struct StreamingSample
     {
         PreloadedSample preload;
@@ -168,13 +120,10 @@ private:
     };
     std::vector<StreamingSample> streamingSamples;
 
-    // Format manager for streaming (owned, shared with DiskStreamer)
-    juce::AudioFormatManager streamingFormatManager;
+    // Format manager for streaming
+    juce::AudioFormatManager formatManager;
 
-    // Streaming-specific methods
-    void processBlockStreaming(juce::AudioBuffer<float>& buffer);
-    void noteOnStreaming(int midiNote, int velocity, int roundRobin);
-    void noteOffStreaming(int midiNote);
-    void loadSamplesStreamingInBackground(const juce::String& folderPath);
+    // Internal methods
+    void loadSamplesInBackground(const juce::String& folderPath);
     const StreamingSample* findStreamingSample(int midiNote, int velocity, int roundRobin) const;
 };

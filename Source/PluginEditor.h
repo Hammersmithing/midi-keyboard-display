@@ -57,11 +57,6 @@ private:
     juce::Label statusLabel;
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    // Streaming toggle
-    juce::ToggleButton streamingToggle{"Streaming"};
-    juce::Label streamingLabel;
-    void streamingToggleChanged();
-
     // Instrument info
     juce::Label fileSizeLabel;
     juce::Label preloadMemLabel;
@@ -81,7 +76,6 @@ private:
 
     // Async loading state
     juce::String pendingLoadFolder;
-    bool pendingLoadStreaming = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiKeyboardEditor)
 };

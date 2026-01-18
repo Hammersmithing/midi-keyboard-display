@@ -32,11 +32,6 @@ void MidiKeyboardProcessor::loadSamplesFromFolder(const juce::File& folder)
     samplerEngine.loadSamplesFromFolder(folder);
 }
 
-void MidiKeyboardProcessor::loadSamplesStreamingFromFolder(const juce::File& folder)
-{
-    samplerEngine.loadSamplesStreamingFromFolder(folder);
-}
-
 void MidiKeyboardProcessor::setADSR(float attack, float decay, float sustain, float release)
 {
     samplerEngine.setADSR(attack, decay, sustain, release);
@@ -145,8 +140,7 @@ void MidiKeyboardProcessor::getStateInformation(juce::MemoryBlock& destData)
     xml.setAttribute("sustain", adsr.sustain);
     xml.setAttribute("release", adsr.release);
 
-    // Save streaming settings
-    xml.setAttribute("streamingEnabled", isStreamingEnabled());
+    // Save preload size
     xml.setAttribute("preloadSizeKB", getPreloadSizeKB());
 
     copyXmlToBinary(xml, destData);
@@ -166,23 +160,18 @@ void MidiKeyboardProcessor::setStateInformation(const void* data, int sizeInByte
         float release = static_cast<float>(xml->getDoubleAttribute("release", 0.3));
         setADSR(attack, decay, sustain, release);
 
-        // Restore streaming settings
-        bool streamingEnabled = xml->getBoolAttribute("streamingEnabled", false);
+        // Restore preload size
         int preloadSizeKB = xml->getIntAttribute("preloadSizeKB", 64);
-        setStreamingEnabled(streamingEnabled);
         setPreloadSizeKB(preloadSizeKB);
 
-        // Restore sample folder (use appropriate loading method based on streaming mode)
+        // Restore sample folder
         juce::String folderPath = xml->getStringAttribute("sampleFolder", "");
         if (folderPath.isNotEmpty())
         {
             juce::File folder(folderPath);
             if (folder.exists() && folder.isDirectory())
             {
-                if (streamingEnabled)
-                    loadSamplesStreamingFromFolder(folder);
-                else
-                    loadSamplesFromFolder(folder);
+                loadSamplesFromFolder(folder);
             }
         }
     }

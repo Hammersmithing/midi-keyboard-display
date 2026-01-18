@@ -298,16 +298,6 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     setupSlider(sustainSlider, sustainLabel, 0.0, 1.0, adsr.sustain);
     setupSlider(releaseSlider, releaseLabel, 0.001, 3.0, adsr.release);
 
-    // Setup streaming toggle
-    addAndMakeVisible(streamingToggle);
-    streamingToggle.setToggleState(processorRef.isStreamingEnabled(), juce::dontSendNotification);
-    streamingToggle.onClick = [this] { streamingToggleChanged(); };
-
-    addAndMakeVisible(streamingLabel);
-    streamingLabel.setFont(juce::FontOptions(12.0f));
-    streamingLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
-    streamingLabel.setText(processorRef.isStreamingEnabled() ? "Mode: STREAMING" : "Mode: RAM", juce::dontSendNotification);
-
     // File size label
     addAndMakeVisible(fileSizeLabel);
     fileSizeLabel.setFont(juce::FontOptions(12.0f));
@@ -358,8 +348,7 @@ void MidiKeyboardEditor::timerCallback()
     {
         if (processorRef.areSamplesLoaded())
         {
-            juce::String modeStr = pendingLoadStreaming ? " [STREAMING]" : " [RAM]";
-            statusLabel.setText("Loaded: " + pendingLoadFolder + modeStr, juce::dontSendNotification);
+            statusLabel.setText("Loaded: " + pendingLoadFolder, juce::dontSendNotification);
             pendingLoadFolder.clear();
 
             // Update file size display
@@ -375,58 +364,40 @@ void MidiKeyboardEditor::timerCallback()
                 sizeStr = juce::String(totalBytes) + " B";
             fileSizeLabel.setText("Size: " + sizeStr, juce::dontSendNotification);
 
-            // Update preload memory display (only for streaming mode)
-            if (pendingLoadStreaming)
-            {
-                int64_t preloadBytes = processorRef.getPreloadMemoryBytes();
-                juce::String preloadStr;
-                if (preloadBytes >= 1024 * 1024 * 1024)
-                    preloadStr = juce::String(preloadBytes / (1024.0 * 1024.0 * 1024.0), 2) + " GB";
-                else if (preloadBytes >= 1024 * 1024)
-                    preloadStr = juce::String(preloadBytes / (1024.0 * 1024.0), 1) + " MB";
-                else if (preloadBytes >= 1024)
-                    preloadStr = juce::String(preloadBytes / 1024.0, 1) + " KB";
-                else
-                    preloadStr = juce::String(preloadBytes) + " B";
-                preloadMemLabel.setText("RAM: " + preloadStr, juce::dontSendNotification);
-            }
+            // Update preload memory display
+            int64_t preloadBytes = processorRef.getPreloadMemoryBytes();
+            juce::String preloadStr;
+            if (preloadBytes >= 1024 * 1024 * 1024)
+                preloadStr = juce::String(preloadBytes / (1024.0 * 1024.0 * 1024.0), 2) + " GB";
+            else if (preloadBytes >= 1024 * 1024)
+                preloadStr = juce::String(preloadBytes / (1024.0 * 1024.0), 1) + " MB";
+            else if (preloadBytes >= 1024)
+                preloadStr = juce::String(preloadBytes / 1024.0, 1) + " KB";
             else
-            {
-                preloadMemLabel.setText("", juce::dontSendNotification);
-            }
+                preloadStr = juce::String(preloadBytes) + " B";
+            preloadMemLabel.setText("RAM: " + preloadStr, juce::dontSendNotification);
         }
         else if (!processorRef.areSamplesLoading())
         {
-            // Loading finished but no samples found
             statusLabel.setText("No valid samples found", juce::dontSendNotification);
             fileSizeLabel.setText("", juce::dontSendNotification);
             pendingLoadFolder.clear();
         }
-        // else still loading, keep showing "Loading..."
     }
 
-    // Always update voice activity (real-time)
+    // Update voice activity (real-time)
     if (processorRef.areSamplesLoaded())
     {
         int activeVoices = processorRef.getActiveVoiceCount();
-        if (processorRef.isStreamingEnabled())
-        {
-            int streamingVoices = processorRef.getStreamingVoiceCount();
-            int underruns = processorRef.getUnderrunCount();
-            voiceActivityLabel.setText("Voices: " + juce::String(activeVoices) + " | Disk: " + juce::String(streamingVoices), juce::dontSendNotification);
+        int streamingVoices = processorRef.getStreamingVoiceCount();
+        int underruns = processorRef.getUnderrunCount();
+        voiceActivityLabel.setText("Voices: " + juce::String(activeVoices) + " | Disk: " + juce::String(streamingVoices), juce::dontSendNotification);
 
-            // Show disk throughput and underrun count
-            float throughput = processorRef.getDiskThroughputMBps();
-            juce::String throughputText = juce::String(throughput, 1) + " MB/s";
-            if (underruns > 0)
-                throughputText += " (" + juce::String(underruns) + " drop)";
-            throughputLabel.setText(throughputText, juce::dontSendNotification);
-        }
-        else
-        {
-            voiceActivityLabel.setText("Voices: " + juce::String(activeVoices), juce::dontSendNotification);
-            throughputLabel.setText("", juce::dontSendNotification);
-        }
+        float throughput = processorRef.getDiskThroughputMBps();
+        juce::String throughputText = juce::String(throughput, 1) + " MB/s";
+        if (underruns > 0)
+            throughputText += " (" + juce::String(underruns) + " drop)";
+        throughputLabel.setText(throughputText, juce::dontSendNotification);
     }
     else
     {
@@ -445,25 +416,12 @@ void MidiKeyboardEditor::updateADSR()
     );
 }
 
-void MidiKeyboardEditor::streamingToggleChanged()
-{
-    bool streaming = streamingToggle.getToggleState();
-    processorRef.setStreamingEnabled(streaming);
-    streamingLabel.setText(streaming ? "Mode: STREAMING" : "Mode: RAM", juce::dontSendNotification);
-
-    // Update status to indicate reload needed
-    if (processorRef.areSamplesLoaded())
-    {
-        statusLabel.setText("Reload samples to apply mode change", juce::dontSendNotification);
-    }
-}
-
 void MidiKeyboardEditor::preloadSliderChanged()
 {
     processorRef.setPreloadSizeKB(static_cast<int>(preloadSlider.getValue()));
 
-    // Auto-reload samples if streaming mode is enabled and samples are loaded
-    if (processorRef.areSamplesLoaded() && processorRef.isStreamingEnabled())
+    // Auto-reload samples if samples are loaded
+    if (processorRef.areSamplesLoaded())
     {
         juce::String folderPath = processorRef.getLoadedFolderPath();
         if (folderPath.isNotEmpty())
@@ -471,10 +429,9 @@ void MidiKeyboardEditor::preloadSliderChanged()
             juce::File folder(folderPath);
             if (folder.isDirectory())
             {
-                processorRef.loadSamplesStreamingFromFolder(folder);
+                processorRef.loadSamplesFromFolder(folder);
                 statusLabel.setText("Reloading with " + juce::String(static_cast<int>(preloadSlider.getValue())) + " KB preload...", juce::dontSendNotification);
                 pendingLoadFolder = folder.getFileName();
-                pendingLoadStreaming = true;
             }
         }
     }
@@ -494,18 +451,9 @@ void MidiKeyboardEditor::loadSamplesClicked()
         auto folder = fc.getResult();
         if (folder.isDirectory())
         {
-            bool streaming = processorRef.isStreamingEnabled();
-            juce::String modeStr = streaming ? " [STREAMING]" : " [RAM]";
-
-            if (streaming)
-                processorRef.loadSamplesStreamingFromFolder(folder);
-            else
-                processorRef.loadSamplesFromFolder(folder);
-
-            // Show loading status - actual completion handled by timer in NoteGridDisplay
-            statusLabel.setText("Loading: " + folder.getFileName() + modeStr + "...", juce::dontSendNotification);
+            processorRef.loadSamplesFromFolder(folder);
+            statusLabel.setText("Loading: " + folder.getFileName() + "...", juce::dontSendNotification);
             pendingLoadFolder = folder.getFileName();
-            pendingLoadStreaming = streaming;
         }
     });
 }
@@ -539,12 +487,6 @@ void MidiKeyboardEditor::resized()
     fileSizeLabel.setBounds(controlsArea.removeFromRight(80));
     controlsArea.removeFromRight(10);
 
-    // Streaming toggle
-    auto streamingArea = controlsArea.removeFromRight(200);
-    streamingLabel.setBounds(streamingArea.removeFromRight(110));
-    streamingToggle.setBounds(streamingArea);
-
-    controlsArea.removeFromRight(10);
     statusLabel.setBounds(controlsArea);
 
     bounds.removeFromTop(gap);
