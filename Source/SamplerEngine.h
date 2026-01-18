@@ -132,7 +132,7 @@ private:
         float envLevel = 0.0f;      // Current envelope level (0-1)
         float envIncrement = 0.0f;  // Per-sample increment for current stage
     };
-    static constexpr int maxVoices = 32;
+    static constexpr int maxVoices = 180;
     std::array<Voice, maxVoices> voices;
 
     ADSRParams adsrParams;

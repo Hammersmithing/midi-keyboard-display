@@ -96,7 +96,7 @@ namespace StreamingConstants
     constexpr int diskReadFrames = 4096;  // ~93ms at 44.1kHz
 
     // Maximum number of streaming voices
-    constexpr int maxStreamingVoices = 64;
+    constexpr int maxStreamingVoices = 180;
 
     // Disk thread polling interval in milliseconds
     constexpr int diskThreadPollMs = 5;
