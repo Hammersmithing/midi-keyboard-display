@@ -86,6 +86,8 @@ public:
     int getActiveVoiceCount() const;
     int getStreamingVoiceCount() const;  // Voices actively reading from disk
     float getDiskThroughputMBps() const; // Current disk throughput in MB/s
+    int getUnderrunCount() const;        // Total buffer underruns
+    void resetUnderrunCount();           // Reset underrun counter
 
     // Query sample configuration for UI
     bool isNoteAvailable(int midiNote) const;  // Has samples or valid fallback

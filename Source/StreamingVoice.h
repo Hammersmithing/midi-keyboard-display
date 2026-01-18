@@ -60,6 +60,10 @@ public:
     void setReadError(bool error) { readError.store(error, std::memory_order_release); }
     bool hasReadError() const { return readError.load(std::memory_order_acquire); }
 
+    // Underrun tracking (shared across all voices)
+    static int getUnderrunCount() { return underrunCount.load(std::memory_order_relaxed); }
+    static void resetUnderrunCount() { underrunCount.store(0, std::memory_order_relaxed); }
+
     // Sample info for disk thread
     const PreloadedSample* getCurrentSample() const { return currentSample; }
 
@@ -96,6 +100,9 @@ private:
     // Underrun protection
     bool isUnderrunning = false;
     int underrunFadePosition = 0;
+
+    // Static underrun counter (shared across all voices)
+    static std::atomic<int> underrunCount;
 
     // Internal helpers
     void checkAndRequestData();

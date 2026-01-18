@@ -412,11 +412,15 @@ void MidiKeyboardEditor::timerCallback()
         if (processorRef.isStreamingEnabled())
         {
             int streamingVoices = processorRef.getStreamingVoiceCount();
+            int underruns = processorRef.getUnderrunCount();
             voiceActivityLabel.setText("Voices: " + juce::String(activeVoices) + " | Disk: " + juce::String(streamingVoices), juce::dontSendNotification);
 
-            // Show disk throughput
+            // Show disk throughput and underrun count
             float throughput = processorRef.getDiskThroughputMBps();
-            throughputLabel.setText(juce::String(throughput, 1) + " MB/s", juce::dontSendNotification);
+            juce::String throughputText = juce::String(throughput, 1) + " MB/s";
+            if (underruns > 0)
+                throughputText += " (" + juce::String(underruns) + " drop)";
+            throughputLabel.setText(throughputText, juce::dontSendNotification);
         }
         else
         {
@@ -526,13 +530,13 @@ void MidiKeyboardEditor::resized()
     controlsArea.removeFromLeft(10);
 
     // Voice activity, throughput, preload RAM, and file size on the right
-    throughputLabel.setBounds(controlsArea.removeFromRight(70));
+    throughputLabel.setBounds(controlsArea.removeFromRight(110));
     controlsArea.removeFromRight(5);
-    voiceActivityLabel.setBounds(controlsArea.removeFromRight(120));
+    voiceActivityLabel.setBounds(controlsArea.removeFromRight(110));
     controlsArea.removeFromRight(5);
-    preloadMemLabel.setBounds(controlsArea.removeFromRight(90));
+    preloadMemLabel.setBounds(controlsArea.removeFromRight(85));
     controlsArea.removeFromRight(5);
-    fileSizeLabel.setBounds(controlsArea.removeFromRight(100));
+    fileSizeLabel.setBounds(controlsArea.removeFromRight(80));
     controlsArea.removeFromRight(10);
 
     // Streaming toggle

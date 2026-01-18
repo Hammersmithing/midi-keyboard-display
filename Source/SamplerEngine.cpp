@@ -834,6 +834,9 @@ void SamplerEngine::loadSamplesStreamingInBackground(const juce::String& folderP
 {
     engineDebugLog("Loading samples in STREAMING mode from: " + folderPath);
 
+    // Reset underrun counter for fresh start
+    StreamingVoice::resetUnderrunCount();
+
     // IMPORTANT: Stop all streaming voices and unregister from DiskStreamer
     // before replacing sample data to prevent race condition crashes
     for (int i = 0; i < StreamingConstants::maxStreamingVoices; ++i)
@@ -1192,4 +1195,14 @@ float SamplerEngine::getDiskThroughputMBps() const
         return 0.0f;
 
     return diskStreamer->getThroughputMBps();
+}
+
+int SamplerEngine::getUnderrunCount() const
+{
+    return StreamingVoice::getUnderrunCount();
+}
+
+void SamplerEngine::resetUnderrunCount()
+{
+    StreamingVoice::resetUnderrunCount();
 }

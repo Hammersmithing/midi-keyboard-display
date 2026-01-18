@@ -1,5 +1,8 @@
 #include "StreamingVoice.h"
 
+// Static underrun counter definition
+std::atomic<int> StreamingVoice::underrunCount{0};
+
 // Debug logging to file
 static void voiceDebugLog(const juce::String& msg)
 {
@@ -224,6 +227,7 @@ void StreamingVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int
                 {
                     isUnderrunning = true;
                     underrunFadePosition = 0;
+                    underrunCount.fetch_add(1, std::memory_order_relaxed);
                 }
             }
         }

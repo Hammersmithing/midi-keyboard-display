@@ -32,6 +32,8 @@ public:
     int getActiveVoiceCount() const { return samplerEngine.getActiveVoiceCount(); }
     int getStreamingVoiceCount() const { return samplerEngine.getStreamingVoiceCount(); }
     float getDiskThroughputMBps() const { return samplerEngine.getDiskThroughputMBps(); }
+    int getUnderrunCount() const { return samplerEngine.getUnderrunCount(); }
+    void resetUnderrunCount() { samplerEngine.resetUnderrunCount(); }
 
     // ADSR controls
     void setADSR(float attack, float decay, float sustain, float release);
