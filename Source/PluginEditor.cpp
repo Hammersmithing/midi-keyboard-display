@@ -115,7 +115,7 @@ void NoteGridDisplay::paint(juce::Graphics& g)
             }
         }
 
-        // Draw orange velocity indicator dash if note is playing
+        // Draw orange velocity indicator dash if note is currently pressed (not just sustained)
         if (noteIsOn && noteAvailable)
         {
             int velocity = processor.getNoteVelocity(midiNote);
