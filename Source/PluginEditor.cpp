@@ -296,7 +296,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     // Setup ADSR sliders
     auto setupSlider = [this](juce::Slider& slider, juce::Label& label, double min, double max, double value)
     {
-        slider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+        slider.setSliderStyle(juce::Slider::RotaryHorizontalDrag);
         slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
         slider.setRange(min, max, 0.001);
         slider.setValue(value);
@@ -339,7 +339,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     throughputLabel.setJustificationType(juce::Justification::centredRight);
 
     // Preload size slider (only shown for streaming mode)
-    preloadSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    preloadSlider.setSliderStyle(juce::Slider::RotaryHorizontalDrag);
     preloadSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
     preloadSlider.setRange(32, 1024, 1);  // 32KB to 1024KB (1MB)
     preloadSlider.setValue(processorRef.getPreloadSizeKB());
@@ -352,7 +352,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     addAndMakeVisible(preloadLabel);
 
     // Transpose slider
-    transposeSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    transposeSlider.setSliderStyle(juce::Slider::RotaryHorizontalDrag);
     transposeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
     transposeSlider.setRange(-12, 12, 1);
     transposeSlider.setValue(processorRef.getTranspose());
@@ -364,7 +364,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     addAndMakeVisible(transposeLabel);
 
     // Sample offset slider
-    sampleOffsetSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    sampleOffsetSlider.setSliderStyle(juce::Slider::RotaryHorizontalDrag);
     sampleOffsetSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
     sampleOffsetSlider.setRange(-12, 12, 1);
     sampleOffsetSlider.setValue(processorRef.getSampleOffset());
@@ -376,7 +376,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     addAndMakeVisible(sampleOffsetLabel);
 
     // Velocity layer limit slider
-    velLayerLimitSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    velLayerLimitSlider.setSliderStyle(juce::Slider::RotaryHorizontalDrag);
     velLayerLimitSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
     velLayerLimitSlider.setRange(1, 8, 1);  // Will be updated when samples load
     velLayerLimitSlider.setValue(processorRef.getVelocityLayerLimit());
@@ -388,7 +388,7 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     addAndMakeVisible(velLayerLimitLabel);
 
     // Round robin limit slider
-    rrLimitSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    rrLimitSlider.setSliderStyle(juce::Slider::RotaryHorizontalDrag);
     rrLimitSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
     rrLimitSlider.setRange(1, 3, 1);  // Will be updated when samples load
     rrLimitSlider.setValue(processorRef.getRoundRobinLimit());
