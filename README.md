@@ -17,7 +17,7 @@ A JUCE-based VST3 plugin that displays MIDI input on a visual 88-key keyboard an
 - **Velocity Layer Limit** - reduce velocity layers for lo-fi sound or lower data usage
 - **Round Robin Limit** - reduce round robin positions to lower CPU/disk usage
 - Sustain pedal support with visual feedback
-- Same-note voice stealing with 10ms crossfade
+- Same-note voice stealing with 10ms crossfade (see Voice Stealing section for details)
 
 ## Sample Folder Setup
 
@@ -231,6 +231,42 @@ The Velocity Layer Limit and RR Limit can be combined to drastically reduce disk
 - **Lo-fi aesthetic**: Use 1-2 velocity layers for a vintage sampler sound
 - **CPU-limited systems**: Reduce RR to minimize concurrent disk reads
 - **Quick sketching**: Minimal settings for fast response
+
+## Voice Stealing
+
+### Current Behavior
+
+When the same note is retriggered (e.g., pressing C4 while C4 is already playing), the old voice is crossfaded out over 10ms while the new voice fades in. This prevents clicks but can create artifacts in certain scenarios.
+
+### The Loud-to-Soft Retrigger Problem
+
+If you play a note loudly (velocity 127) and immediately retrigger it softly (velocity 1), the crossfade blends the loud sample into the soft sample, creating an unnatural "sipping" sound as volume rapidly drops. Real pianos don't behave this way.
+
+**Real piano physics:**
+1. The damper lifts before the hammer strikes
+2. The already-vibrating string continues momentarily
+3. The hammer strikes a string that's already in motion
+4. The existing vibration doesn't instantly stop - it interacts with the new strike
+5. A soft restrike on a ringing string doesn't produce a sudden volume drop
+
+### Planned Improvement: Polyphonic Same-Note
+
+The most realistic solution is polyphonic same-note with natural release transition:
+
+1. When the same note is retriggered, the **old voice** transitions to its release phase (as if the key was released) and continues its natural decay
+2. The **new voice** starts fresh with its attack phase
+3. Both voices coexist temporarily - the old fades naturally while the new plays
+
+This mimics real piano behavior where the damper lifts, the vibrating string continues, and the new strike adds its own energy. You hear both the tail of the old vibration and the new attack blended naturally.
+
+**Implementation considerations:**
+- Remove same-note voice stealing entirely - treat retriggered notes as new voices
+- Trigger `noteOff` on existing voices for that note (sends them to release phase)
+- Start a new voice for the incoming note
+- Add a configurable max voices per note (e.g., 2-4) to prevent runaway voice count
+- Oldest voice gets killed if limit exceeded
+
+**Trade-off:** Uses more voices and CPU, but produces more realistic piano behavior. Most users won't rapidly retrigger the same note constantly, so the impact is minimal in typical use.
 
 ## State Persistence
 
@@ -476,6 +512,7 @@ Potential features to implement:
 - **Per-note panning** - Stereo spread across the keyboard range
 
 ### Engine Improvements
+- **Polyphonic same-note retrigger** - Allow multiple voices of the same note to coexist for realistic piano behavior (see Voice Stealing section)
 - **Sample rate conversion** - Resample on-the-fly if samples don't match host rate
 - **Legato mode** - Monophonic playing with glide
 
