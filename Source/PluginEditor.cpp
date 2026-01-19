@@ -27,6 +27,9 @@ void NoteGridDisplay::paint(juce::Graphics& g)
     if (maxLayers == 0)
         maxLayers = 1;  // Avoid division by zero, show at least one row
 
+    // Get the velocity layer limit (how many layers are actually in use)
+    int velLayerLimit = processor.getVelocityLayerLimit();
+
     const float layerHeight = bounds.getHeight() / static_cast<float>(maxLayers);
 
     for (int noteOffset = 0; noteOffset < numNotes; ++noteOffset)
@@ -53,8 +56,12 @@ void NoteGridDisplay::paint(juce::Graphics& g)
             // Check if this layer exists for this note
             bool layerExists = (actualLayerIdx >= 0 && actualLayerIdx < numLayers);
 
+            // Check if this layer is disabled by the velocity layer limit
+            // (top layers are disabled first - highest velocity)
+            bool layerDisabled = layerExists && (actualLayerIdx >= velLayerLimit);
+
             // Check if this layer is active for this note
-            bool layerActive = layerExists &&
+            bool layerActive = layerExists && !layerDisabled &&
                 ((currentLayerIdx == actualLayerIdx) || processor.isNoteLayerActivated(midiNote, actualLayerIdx));
 
             // Draw RR boxes within this layer cell (dynamic count based on loaded samples)
@@ -79,6 +86,8 @@ void NoteGridDisplay::paint(juce::Graphics& g)
 
                 if (!noteAvailable || !layerExists)
                     g.setColour(juce::Colour(0xff252525));  // Very dark gray for unavailable
+                else if (layerDisabled)
+                    g.setColour(juce::Colour(0xff1a1a1a));  // Even darker for disabled by limit
                 else if (rrActive)
                     g.setColour(juce::Colour(0xff4a9eff));  // Blue when active
                 else if (layerActive)
@@ -90,8 +99,8 @@ void NoteGridDisplay::paint(juce::Graphics& g)
                 g.setColour(juce::Colour(0xff222222));
                 g.drawRect(box, 0.5f);
 
-                // Draw RR number (only if layer exists for this note)
-                if (layerExists)
+                // Draw RR number (only if layer exists and is not disabled)
+                if (layerExists && !layerDisabled)
                 {
                     g.setColour(rrActive ? juce::Colours::white : juce::Colour(0xff666666));
                     g.setFont(boxHeight * 0.4f);
