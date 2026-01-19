@@ -30,7 +30,12 @@ void NoteGridDisplay::paint(juce::Graphics& g)
     // Get the velocity layer limit (how many layers are actually in use)
     int velLayerLimit = processor.getVelocityLayerLimit();
 
-    const float layerHeight = bounds.getHeight() / static_cast<float>(maxLayers);
+    // Use the limited number of layers for display (scale boxes to fill space)
+    int displayLayers = std::min(maxLayers, velLayerLimit);
+    if (displayLayers == 0)
+        displayLayers = 1;
+
+    const float layerHeight = bounds.getHeight() / static_cast<float>(displayLayers);
 
     for (int noteOffset = 0; noteOffset < numNotes; ++noteOffset)
     {
@@ -47,21 +52,19 @@ void NoteGridDisplay::paint(juce::Graphics& g)
         bool noteAvailable = processor.isNoteAvailable(midiNote);
 
         // Draw velocity layer rows (top = highest velocity, bottom = lowest)
-        for (int layerIdx = 0; layerIdx < maxLayers; ++layerIdx)
+        // Only draw the active layers (up to velLayerLimit)
+        int noteLayers = std::min(numLayers, velLayerLimit);
+        for (int layerIdx = 0; layerIdx < displayLayers; ++layerIdx)
         {
-            // Reverse index so highest velocity is on top
-            int actualLayerIdx = numLayers - 1 - layerIdx;
+            // Reverse index so highest velocity is on top (within the limited layers)
+            int actualLayerIdx = noteLayers - 1 - layerIdx;
             float layerY = bounds.getY() + layerIdx * layerHeight;
 
             // Check if this layer exists for this note
-            bool layerExists = (actualLayerIdx >= 0 && actualLayerIdx < numLayers);
-
-            // Check if this layer is disabled by the velocity layer limit
-            // (top layers are disabled first - highest velocity)
-            bool layerDisabled = layerExists && (actualLayerIdx >= velLayerLimit);
+            bool layerExists = (actualLayerIdx >= 0 && actualLayerIdx < noteLayers);
 
             // Check if this layer is active for this note
-            bool layerActive = layerExists && !layerDisabled &&
+            bool layerActive = layerExists &&
                 ((currentLayerIdx == actualLayerIdx) || processor.isNoteLayerActivated(midiNote, actualLayerIdx));
 
             // Draw RR boxes within this layer cell (dynamic count based on loaded samples)
@@ -86,8 +89,6 @@ void NoteGridDisplay::paint(juce::Graphics& g)
 
                 if (!noteAvailable || !layerExists)
                     g.setColour(juce::Colour(0xff252525));  // Very dark gray for unavailable
-                else if (layerDisabled)
-                    g.setColour(juce::Colour(0xff1a1a1a));  // Even darker for disabled by limit
                 else if (rrActive)
                     g.setColour(juce::Colour(0xff4a9eff));  // Blue when active
                 else if (layerActive)
@@ -99,8 +100,8 @@ void NoteGridDisplay::paint(juce::Graphics& g)
                 g.setColour(juce::Colour(0xff222222));
                 g.drawRect(box, 0.5f);
 
-                // Draw RR number (only if layer exists and is not disabled)
-                if (layerExists && !layerDisabled)
+                // Draw RR number (only if layer exists for this note)
+                if (layerExists)
                 {
                     g.setColour(rrActive ? juce::Colours::white : juce::Colour(0xff666666));
                     g.setFont(boxHeight * 0.4f);
@@ -115,7 +116,7 @@ void NoteGridDisplay::paint(juce::Graphics& g)
     }
 
     // Draw horizontal separators between layers
-    for (int i = 1; i < maxLayers; ++i)
+    for (int i = 1; i < displayLayers; ++i)
     {
         float y = bounds.getY() + i * layerHeight;
         g.setColour(juce::Colour(0xff222222));
