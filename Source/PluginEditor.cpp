@@ -115,6 +115,22 @@ void NoteGridDisplay::paint(juce::Graphics& g)
             }
         }
 
+        // Draw orange velocity indicator dash if note is playing
+        if (noteIsOn && noteAvailable)
+        {
+            int velocity = processor.getNoteVelocity(midiNote);
+            if (velocity > 0)
+            {
+                // Calculate vertical position: velocity 127 = top, velocity 1 = bottom
+                float normalizedVel = static_cast<float>(velocity - 1) / 126.0f;
+                float dashY = bounds.getBottom() - normalizedVel * bounds.getHeight();
+
+                // Draw orange dash spanning the full note width
+                g.setColour(juce::Colour(0xffff8c00));  // Orange
+                g.drawLine(noteX + 1, dashY, noteX + noteWidth - 1, dashY, 2.0f);
+            }
+        }
+
         // Draw vertical separator between notes
         g.setColour(juce::Colour(0xff222222));
         g.drawLine(noteX + noteWidth, bounds.getY(), noteX + noteWidth, bounds.getBottom(), 0.5f);
