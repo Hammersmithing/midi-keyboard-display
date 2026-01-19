@@ -1,6 +1,6 @@
 # MIDI Keyboard Display & Sampler
 
-A JUCE-based VST3/AU plugin that displays MIDI input on a visual 88-key keyboard and plays back samples using Direct From Disk (DFD) streaming. Designed for large sample libraries (100GB+) that exceed available RAM.
+A JUCE-based VST3 plugin that displays MIDI input on a visual 88-key keyboard and plays back samples using Direct From Disk (DFD) streaming. Designed for large sample libraries (100GB+) that exceed available RAM.
 
 ## Features
 
@@ -12,6 +12,8 @@ A JUCE-based VST3/AU plugin that displays MIDI input on a visual 88-key keyboard
 - Sample playback with velocity layers and round-robin cycling (up to 180 voices)
 - Pitch-shifting for notes using fallback samples
 - Global ADSR envelope controls
+- **Transpose** (-12 to +12 semitones) - shift output notes
+- **Sample Offset** (-12 to +12 semitones) - borrow samples from other notes with pitch correction for subtle timbre changes
 - Sustain pedal support with visual feedback
 - Same-note voice stealing with 10ms crossfade
 
@@ -124,12 +126,31 @@ Four rotary knobs control the global amplitude envelope:
 - **S (Sustain)**: 0.0 - 1.0 level
 - **R (Release)**: 0.001 - 3.0 seconds
 
+### Transpose
+
+Shifts the output note by -12 to +12 semitones. This is a simple MIDI offset with no pitch correction.
+
+**Example with Transpose +5:**
+- Press C4 → triggers and sounds F4
+
+### Sample Offset
+
+A subtle sound design feature that borrows samples from a different note (-12 to +12 semitones) but pitch-corrects them back to sound like the original note. This lets you play a note with a different sample's timbral characteristics.
+
+**Example with Sample Offset +1:**
+- Press C4 → uses C#4 sample → pitch-shifted down 1 semitone → sounds like C4 with C#4's timbre
+
+**Combined example (Transpose +2, Sample Offset +1):**
+- Press C4 → target sound is D4 → uses D#4 sample → pitch-shifted down → sounds like D4 with D#4's timbre
+
 ## State Persistence
 
 The plugin saves its state when your DAW project is saved, including:
 - **Sample folder path** - automatically reloads samples when project opens
 - **ADSR envelope settings** - attack, decay, sustain, release values
 - **Preload size** - streaming buffer configuration
+- **Transpose** - semitone offset
+- **Sample Offset** - sample borrowing offset
 
 This means you can close a project and reopen it later with all your samples and settings intact.
 
@@ -144,7 +165,8 @@ State is stored as XML with the following structure:
 <MidiKeyboardState sampleFolder="/path/to/samples"
                    attack="0.01" decay="0.1"
                    sustain="0.7" release="0.3"
-                   preloadSizeKB="64"/>
+                   preloadSizeKB="64"
+                   transpose="0" sampleOffset="0"/>
 ```
 
 ## Async Sample Loading

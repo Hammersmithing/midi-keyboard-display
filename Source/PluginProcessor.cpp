@@ -94,7 +94,7 @@ void MidiKeyboardProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
             }
 
             // Trigger sample playback
-            samplerEngine.noteOn(midiNote, velocity, currentRoundRobin);
+            samplerEngine.noteOn(midiNote, velocity, currentRoundRobin, sampleOffsetAmount);
 
             // Advance round-robin: 1 -> 2 -> 3 -> 1
             currentRoundRobin = (currentRoundRobin % 3) + 1;
@@ -147,6 +147,9 @@ void MidiKeyboardProcessor::getStateInformation(juce::MemoryBlock& destData)
     // Save transpose
     xml.setAttribute("transpose", transposeAmount);
 
+    // Save sample offset
+    xml.setAttribute("sampleOffset", sampleOffsetAmount);
+
     copyXmlToBinary(xml, destData);
 }
 
@@ -171,6 +174,10 @@ void MidiKeyboardProcessor::setStateInformation(const void* data, int sizeInByte
         // Restore transpose
         int transpose = xml->getIntAttribute("transpose", 0);
         setTranspose(transpose);
+
+        // Restore sample offset
+        int sampleOffset = xml->getIntAttribute("sampleOffset", 0);
+        setSampleOffset(sampleOffset);
 
         // Restore sample folder
         juce::String folderPath = xml->getStringAttribute("sampleFolder", "");

@@ -40,6 +40,10 @@ public:
     void setTranspose(int semitones) { transposeAmount = juce::jlimit(-12, 12, semitones); }
     int getTranspose() const { return transposeAmount; }
 
+    // Sample offset control (-12 to +12 semitones) - borrow samples from offset note, pitch-correct back
+    void setSampleOffset(int semitones) { sampleOffsetAmount = juce::jlimit(-12, 12, semitones); }
+    int getSampleOffset() const { return sampleOffsetAmount; }
+
     // Sample configuration queries for UI
     bool isNoteAvailable(int midiNote) const { return samplerEngine.isNoteAvailable(midiNote); }
     bool noteHasOwnSamples(int midiNote) const { return samplerEngine.noteHasOwnSamples(midiNote); }
@@ -108,7 +112,8 @@ private:
     std::array<std::array<bool, 4>, 128> noteRRActivated{};     // Per-note: which RR positions activated (index 1-3)
     int currentRoundRobin = 1;  // Next RR position to assign (cycles 1->2->3->1)
     bool sustainPedalDown = false;
-    int transposeAmount = 0;  // -12 to +12 semitones
+    int transposeAmount = 0;      // -12 to +12 semitones
+    int sampleOffsetAmount = 0;   // -12 to +12 semitones (borrow samples, pitch-correct back)
 
     SamplerEngine samplerEngine;
 

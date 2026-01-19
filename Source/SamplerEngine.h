@@ -45,7 +45,7 @@ public:
 
     void prepareToPlay(double sampleRate, int samplesPerBlock);
     void loadSamplesFromFolder(const juce::File& folder);
-    void noteOn(int midiNote, int velocity, int roundRobin);
+    void noteOn(int midiNote, int velocity, int roundRobin, int sampleOffset = 0);
     void noteOff(int midiNote);
     void processBlock(juce::AudioBuffer<float>& buffer);
 

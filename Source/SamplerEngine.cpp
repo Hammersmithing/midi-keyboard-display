@@ -491,9 +491,11 @@ const SamplerEngine::StreamingSample* SamplerEngine::findStreamingSample(int mid
     return nullptr;
 }
 
-void SamplerEngine::noteOn(int midiNote, int velocity, int roundRobin)
+void SamplerEngine::noteOn(int midiNote, int velocity, int roundRobin, int sampleOffset)
 {
-    const StreamingSample* ss = findStreamingSample(midiNote, velocity, roundRobin);
+    // Find sample from offset note (for sample borrowing), but play at original midiNote pitch
+    int sampleNote = juce::jlimit(0, 127, midiNote + sampleOffset);
+    const StreamingSample* ss = findStreamingSample(sampleNote, velocity, roundRobin);
     if (!ss)
         return;
 

@@ -347,6 +347,18 @@ MidiKeyboardEditor::MidiKeyboardEditor(MidiKeyboardProcessor& p)
     transposeLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
     addAndMakeVisible(transposeLabel);
 
+    // Sample offset slider
+    sampleOffsetSlider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    sampleOffsetSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 15);
+    sampleOffsetSlider.setRange(-12, 12, 1);
+    sampleOffsetSlider.setValue(processorRef.getSampleOffset());
+    sampleOffsetSlider.onValueChange = [this] { updateSampleOffset(); };
+    addAndMakeVisible(sampleOffsetSlider);
+
+    sampleOffsetLabel.setJustificationType(juce::Justification::centred);
+    sampleOffsetLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+    addAndMakeVisible(sampleOffsetLabel);
+
     // Start timer for async loading status updates
     startTimerHz(10);
 
@@ -431,6 +443,11 @@ void MidiKeyboardEditor::updateADSR()
 void MidiKeyboardEditor::updateTranspose()
 {
     processorRef.setTranspose(static_cast<int>(transposeSlider.getValue()));
+}
+
+void MidiKeyboardEditor::updateSampleOffset()
+{
+    processorRef.setSampleOffset(static_cast<int>(sampleOffsetSlider.getValue()));
 }
 
 void MidiKeyboardEditor::preloadSliderChanged()
@@ -541,6 +558,14 @@ void MidiKeyboardEditor::resized()
     auto transposeArea = adsrArea.removeFromLeft(70);
     transposeLabel.setBounds(transposeArea.removeFromTop(labelHeight));
     transposeSlider.setBounds(transposeArea);
+
+    // Add some spacing before sample offset knob
+    adsrArea.removeFromLeft(20);
+
+    // Sample offset knob
+    auto sampleOffsetArea = adsrArea.removeFromLeft(70);
+    sampleOffsetLabel.setBounds(sampleOffsetArea.removeFromTop(labelHeight));
+    sampleOffsetSlider.setBounds(sampleOffsetArea);
 
     bounds.removeFromTop(gap);
 

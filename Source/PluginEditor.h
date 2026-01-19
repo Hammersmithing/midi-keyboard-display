@@ -79,6 +79,11 @@ private:
     juce::Label transposeLabel{"", "Transpose"};
     void updateTranspose();
 
+    // Sample offset control (borrow samples, pitch-correct back)
+    juce::Slider sampleOffsetSlider;
+    juce::Label sampleOffsetLabel{"", "Sample Ofs"};
+    void updateSampleOffset();
+
     // Async loading state
     juce::String pendingLoadFolder;
 
