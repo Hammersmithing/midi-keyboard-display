@@ -50,6 +50,7 @@ void NoteGridDisplay::paint(juce::Graphics& g)
         int currentLayerIdx = processor.getNoteVelocityLayerIndex(midiNote);
         int currentRR = processor.getNoteRoundRobin(midiNote);
         bool noteAvailable = processor.isNoteAvailable(midiNote);
+        bool noteIsOn = processor.isNoteOn(midiNote);
 
         // Draw velocity layer rows (top = highest velocity, bottom = lowest)
         // Only draw the active layers (up to velLayerLimit)
@@ -63,9 +64,21 @@ void NoteGridDisplay::paint(juce::Graphics& g)
             // Check if this layer exists for this note
             bool layerExists = (actualLayerIdx >= 0 && actualLayerIdx < noteLayers);
 
+            // Remap current layer index to the limited display range
+            // When velocity is redistributed across fewer layers, we need to map the original
+            // layer index to where it would appear in the limited view
+            int remappedLayerIdx = -1;
+            if (currentLayerIdx >= 0 && numLayers > 0)
+            {
+                // Map the original layer to the limited range using same logic as playback
+                int velocity = processor.getNoteVelocity(midiNote);
+                if (velocity > 0)
+                    remappedLayerIdx = ((velocity - 1) * noteLayers) / 127;
+            }
+
             // Check if this layer is active for this note
-            bool layerActive = layerExists &&
-                ((currentLayerIdx == actualLayerIdx) || processor.isNoteLayerActivated(midiNote, actualLayerIdx));
+            bool layerActive = layerExists && noteIsOn &&
+                ((remappedLayerIdx == actualLayerIdx) || processor.isNoteLayerActivated(midiNote, actualLayerIdx));
 
             // Draw RR boxes within this layer cell (dynamic count based on loaded samples)
             int maxRR = processor.getMaxRoundRobins();
