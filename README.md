@@ -568,20 +568,34 @@ Piano Samples/
 
 Potential features to implement:
 
-### Audio Features
-- **Loop points** - For sustaining instruments (organs, pads) that need seamless looping
-- **Release samples** - Trigger separate samples on note-off (piano key release sounds)
-- **Pitch bend / mod wheel** - MIDI CC handling for expression
-- **Per-note panning** - Stereo spread across the keyboard range
-
-### Engine Improvements
+### Performance & Efficiency
+- **Background preload loading** - Load samples on a background thread so UI never freezes (currently debounced but still blocks)
+- **Preload priority queue** - Load most-used notes first (middle octaves before extremes)
 - **Sample rate conversion** - Resample on-the-fly if samples don't match host rate
-- **Legato mode** - Monophonic playing with glide
+
+### Sound & Playback
+- **Release samples** - Trigger separate samples on note-off (piano key release sounds)
+- **Loop points** - For sustaining instruments (organs, pads) that need seamless looping
+- **Velocity curve editor** - Adjustable curve instead of linear mapping
+- **Per-note panning** - Stereo spread across the keyboard range
+- **Legato/mono mode** - Monophonic playing with glide
 
 ### UI/UX
+- **Preset system** - Save/load limit configurations (e.g., "Lo-fi", "Full Quality", "Live Mode")
 - **Waveform display** - Show sample waveforms in the UI
-- **Velocity curve editor** - Visual curve instead of just a knob
-- **Preset browser** - Save/load instrument configurations
+- **Loading progress bar** - Show percentage during sample loading
+- **Keyboard input** - Play notes with computer keyboard
+- **Click to play** - Click on keyboard display to trigger notes
+
+### MIDI
+- **Pitch bend support** - MIDI pitch wheel handling
+- **Mod wheel** - Map to filter, volume, or other parameters
+- **MIDI learn** - Map CCs to any parameter
+
+### Quality of Life
+- **Recent folders** - Quick access to previously loaded libraries
+- **Drag & drop** - Drop folder onto UI to load samples
+- **Sample validation** - Warn about missing velocity layers or RR gaps
 
 ### Stability
 - **Unit tests** - Test ring buffer, voice management, file parsing
