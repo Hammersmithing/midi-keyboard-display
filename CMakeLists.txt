@@ -47,3 +47,34 @@ PUBLIC
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags
 )
+
+# Unit tests
+enable_testing()
+
+juce_add_console_app(HammerSamplerTests
+    PRODUCT_NAME "Hammer Sampler Tests"
+)
+
+target_sources(HammerSamplerTests PRIVATE
+    Tests/ParsingTests.cpp
+    Source/SamplerEngine.cpp
+    Source/SamplerEngine.h
+    Source/StreamingVoice.cpp
+    Source/StreamingVoice.h
+    Source/DiskStreamer.cpp
+    Source/DiskStreamer.h
+    Source/DiskStreaming.h
+)
+
+target_compile_definitions(HammerSamplerTests PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+
+target_link_libraries(HammerSamplerTests PRIVATE
+    juce::juce_core
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+)
+
+add_test(NAME ParsingTests COMMAND HammerSamplerTests)

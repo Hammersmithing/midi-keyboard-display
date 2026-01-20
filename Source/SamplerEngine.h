@@ -95,12 +95,15 @@ public:
     void setSameNoteReleaseTime(float seconds) { sameNoteReleaseTime = juce::jlimit(0.01f, 5.0f, seconds); }
     float getSameNoteReleaseTime() const { return sameNoteReleaseTime; }
 
-private:
     // Parse note name to MIDI note number (e.g., "C4" -> 60, "G#6" -> 104)
-    int parseNoteName(const juce::String& noteName) const;
+    // Public static for unit testing
+    static int parseNoteName(const juce::String& noteName);
 
     // Parse file name: returns true if valid, fills out note, velocity, roundRobin
-    bool parseFileName(const juce::String& fileName, int& note, int& velocity, int& roundRobin) const;
+    // Public static for unit testing
+    static bool parseFileName(const juce::String& fileName, int& note, int& velocity, int& roundRobin);
+
+private:
 
     std::map<int, NoteMapping> noteMappings; // Key: MIDI note number
 

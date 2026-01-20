@@ -189,7 +189,7 @@ int SamplerEngine::getVelocityLayerIndex(int midiNote, int velocity) const
     return layerIndex;
 }
 
-int SamplerEngine::parseNoteName(const juce::String& noteName) const
+int SamplerEngine::parseNoteName(const juce::String& noteName)
 {
     if (noteName.isEmpty())
         return -1;
@@ -244,7 +244,7 @@ int SamplerEngine::parseNoteName(const juce::String& noteName) const
     return midiNote;
 }
 
-bool SamplerEngine::parseFileName(const juce::String& fileName, int& note, int& velocity, int& roundRobin) const
+bool SamplerEngine::parseFileName(const juce::String& fileName, int& note, int& velocity, int& roundRobin)
 {
     juce::String baseName = fileName.upToLastOccurrenceOf(".", false, false);
 
