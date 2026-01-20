@@ -47,7 +47,6 @@ void NoteGridDisplay::paint(juce::Graphics& g)
         int numLayers = static_cast<int>(velocityLayers.size());
 
         // Get current state for this note
-        int currentLayerIdx = processor.getNoteVelocityLayerIndex(midiNote);
         bool noteAvailable = processor.isNoteAvailable(midiNote);
         bool noteIsOn = processor.isNoteOn(midiNote);
 

@@ -197,7 +197,7 @@ int SamplerEngine::parseNoteName(const juce::String& noteName) const
     juce::String upper = noteName.toUpperCase();
     int index = 0;
 
-    char noteLetter = upper[0];
+    char noteLetter = static_cast<char>(upper[0]);
     int noteBase = -1;
     switch (noteLetter)
     {
@@ -746,7 +746,7 @@ void SamplerEngine::reloadPreloadBuffers()
         if (ss.isPreloaded)
         {
             totalPreloadBytes += static_cast<int64_t>(ss.preload.preloadBuffer.getNumSamples()) *
-                                 ss.preload.numChannels * sizeof(float);
+                                 static_cast<int64_t>(ss.preload.numChannels) * static_cast<int64_t>(sizeof(float));
         }
     }
 
@@ -836,7 +836,7 @@ void SamplerEngine::updatePreloadedSamples()
         if (ss.isPreloaded)
         {
             totalPreloadBytes += static_cast<int64_t>(ss.preload.preloadBuffer.getNumSamples()) *
-                                 ss.preload.numChannels * sizeof(float);
+                                 static_cast<int64_t>(ss.preload.numChannels) * static_cast<int64_t>(sizeof(float));
         }
     }
 

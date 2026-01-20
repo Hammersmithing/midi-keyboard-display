@@ -83,7 +83,7 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     // Check if a note is currently pressed
-    bool isNoteOn(int midiNote) const { return noteVelocities[midiNote] > 0; }
+    bool isNoteOn(int midiNote) const { return noteVelocities[static_cast<size_t>(midiNote)] > 0; }
 
     // Get velocity of a note (0 if not pressed)
     int getNoteVelocity(int midiNote) const { return noteVelocities[static_cast<size_t>(midiNote)]; }

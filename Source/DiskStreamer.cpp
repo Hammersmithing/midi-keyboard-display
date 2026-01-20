@@ -96,7 +96,7 @@ void DiskStreamer::run()
             if (elapsedMs > 0)
             {
                 int64_t bytesInWindow = bytesReadInWindow.exchange(0, std::memory_order_relaxed);
-                float mbps = static_cast<float>(bytesInWindow) / (elapsedMs * 1000.0f);  // bytes/ms -> MB/s
+                float mbps = static_cast<float>(static_cast<double>(bytesInWindow) / (elapsedMs * 1000.0));  // bytes/ms -> MB/s
                 currentThroughputMBps.store(mbps, std::memory_order_relaxed);
             }
 
@@ -193,7 +193,7 @@ void DiskStreamer::fillVoiceBuffer(int voiceIndex)
         }
 
         // Track bytes read for throughput calculation
-        int64_t bytesRead = static_cast<int64_t>(framesToRead) * sample->numChannels * sizeof(float);
+        int64_t bytesRead = static_cast<int64_t>(framesToRead) * static_cast<int64_t>(sample->numChannels) * static_cast<int64_t>(sizeof(float));
         bytesReadInWindow.fetch_add(bytesRead, std::memory_order_relaxed);
         totalBytesRead.fetch_add(bytesRead, std::memory_order_relaxed);
 
