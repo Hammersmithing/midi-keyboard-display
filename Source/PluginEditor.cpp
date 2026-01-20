@@ -8,7 +8,7 @@
 NoteGridDisplay::NoteGridDisplay(MidiKeyboardProcessor& p)
     : processor(p)
 {
-    startTimerHz(60);
+    startTimerHz(5);
 }
 
 void NoteGridDisplay::timerCallback()
@@ -134,7 +134,7 @@ void NoteGridDisplay::paint(juce::Graphics& g)
 KeyboardDisplay::KeyboardDisplay(MidiKeyboardProcessor& p)
     : processor(p)
 {
-    startTimerHz(60);
+    startTimerHz(5);
 }
 
 void KeyboardDisplay::timerCallback()
